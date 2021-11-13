@@ -1,0 +1,98 @@
+---
+title = "域名备案与 HTTPS 配置"
+date = "2021-11-13"
+author = ["ikey4u <pwnkeeper@gmail>"]
+---
+
+# 备案流程
+
+备案主要分为两部分, 第一部分是 ICP 备案, 第二部分是公安备案.
+
+- ICP 备案
+
+    ICP 备案可以参考可以参考腾讯云的文档 @a{https://cloud.tencent.com/document/product/243/18914},
+    总体上是比较清晰的, 看完之后按照腾讯云的备案助手一步步来就行.
+
+    需要说明的是, 备案需要居住证或者暂住证, 而这个办理大概需要一周左右时间, 建议提前办理, 在广东省的话可以直接上网办理,
+    制作完后快递邮寄到家.
+
+    ICP 备案资料填写完成后, 腾讯客服会先审核, 如果审核不过会打电话告诉你哪些地方需要修改,
+    客服审核通过后就会提交到工信部审核, 审核通过后会给你发邮件, 时间大概半个月左右.
+
+- 公安部备案
+
+    ICP 备案后, 还需要公安部备案, 可以参考腾讯云文档 @a{https://cloud.tencent.com/document/product/243/19142},
+    步骤也很清晰, 这里就不多说了.
+
+
+- 网站底部栏备案标志
+
+    ICP 备案和公安部备案完成之后, 需要在 30 天之内在网站首页底部按要求显示 ICP 备案和公安部备案号,
+    并链接到对应网址.
+
+# 启用 HTTPS
+
+域名备案完毕后, 当然得紧跟时代潮流, 开启 https 了, 然而 ssl 证书是收费的, 一年价格不菲, 动辄几千元,
+你说平常就简单写个博客, 也没几个人访问, 这价格谁受得了, 不过搜了一下, 网上有许多公认的白嫖方法,
+这里我们就用 @a{https://acme.sh} 来完成这个任务.
+
+- 安装 acme.sh
+
+        git clone https://github.com/acmesh-official/acme.sh.git acme
+        cd acme && bash acme.sh --install
+
+    安装完成后, 建议使用命令 `crontab -l` 看一下自动任务列表, 确保自动更新证书的任务已经被添加了,
+    然后执行如下命令刷新环境变量
+
+        exec $SHELL
+
+    之后就可以使用 acme.sh 命令了
+
+- 注册 zerossl
+
+    打开 @a{https://app.zerossl.com/signup} 注册一个帐号, 然后转到 @a{https:app.zerossl.com/developer},
+    点击生成 EAB Credentials, 会得到 `EAB KID` 和 `EAB HMAC Key`, acme.sh 会使用这两个信息进行证书注册:
+
+        acme.sh --register-account --server zerossl --eab-kid  <EAB_KID> --eab-hmac-key  <EAB_HMAC_KEY>
+
+- 生成证书
+
+    假设你的网站域名是 `example.com`, 根目录是 `/var/www/html`, 那么就可以使用如下命令生成证书
+
+        acme.sh --issue -d example.com -w /var/www/html
+
+    生成的证书位于目录 `~/.acme.sh/example.com/`, 输出类似如下
+
+        [Sat 13 Nov 2021 01:45:45 PM CST] Your cert is in: /home/username/.acme.sh/example.com/example.com.cer
+        [Sat 13 Nov 2021 01:45:45 PM CST] Your cert key is in: /home/username/.acme.sh/example.com/example.com.key
+        [Sat 13 Nov 2021 01:45:45 PM CST] The intermediate CA cert is in: /home/username/.acme.sh/example.com/ca.cer
+        [Sat 13 Nov 2021 01:45:45 PM CST] And the full chain certs is there: /home/username/.acme.sh/example.com/fullchain.cer
+
+- 安装证书
+
+    我这边使用的是 nginx, 安装方式如下
+
+        sudo mkdir -p /etc/nginx/ssl
+        sudo chown -R ${USER}:${USER} /etc/nginx/ssl/
+        acme.sh --install-cert -d example.com --key-file /etc/nginx/ssl/example.com.key --fullchain-file /etc/nginx/ssl/example.com.crt --reloadcmd "sudo nginx -s reload"
+
+    其中 `--key-file` 和 `--fullchain-file` 用于设置证书 key 和证书的安装位置.
+
+- 配置 nginx
+
+    打开 /etc/nginx/nginx.conf, 在 http 节的 server 节中, 关注如下几个配置
+
+        listen  443 ssl;
+        server_name example.com;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        ssl_certificate /etc/nginx/ssl/example.com.crt;
+        ssl_certificate_key  /etc/nginx/ssl/example.com.key;
+
+    要确保 443 端口在防火墙中已经放行, 配置完成后, 重载 nginx 配置即可
+
+        sudo nginx -s reload
+
+- 访问
+
+    使用 `https://example.com` 即可访问你的网站, 一切顺利的话, 你就会看到浏览器上的小绿锁.
