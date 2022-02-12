@@ -46,7 +46,9 @@ author = ["ikey4u <pwnkeeper@gmail>"]
 
         exec $SHELL
 
-    之后就可以使用 acme.sh 命令了
+    acme.sh 可能会用到 socat, 建议安装一下
+
+        apt install socat
 
 - 注册 zerossl
 
@@ -96,3 +98,52 @@ author = ["ikey4u <pwnkeeper@gmail>"]
 - 访问
 
     使用 `https://example.com` 即可访问你的网站, 一切顺利的话, 你就会看到浏览器上的小绿锁.
+
+# 切换为 Let's Encrypt
+
+ZeroSSL 在 renew 证书的时候出现超时问题, 切换到 Let's Encrypt 解决问题, 步骤如下.
+
+- 切换到 letsencrypt 服务
+
+        acme.sh --set-default-ca --server letsencrypt
+
+- 创建证书
+
+        acme.sh --issue -d zhqli.com -w /srv/www
+
+    注意, 在创建证书的时候会通过 80 端口访问 /srv/www/.well-known 进行权限认证, 所以需要在 nginx 中
+    设置访问路径, 如下所示
+
+        server {
+            listen  80;
+            server_name zhqli.com;
+
+            location / {
+                root /srv/www;
+                index index.html;
+            }
+        }
+
+    如果想让所有访问 80 端口的都重定向到 https, 可以使用如下配置
+
+        server {
+            # ...
+            return 301 https://$server_name$request_uri;
+            # ...
+        }
+
+    如果你只想让访问根域名时重定向到 https, 可以使用下面的配置
+
+        location / {
+            root /srv/www;
+            index index.html;
+            return 301 https://$server_name$request_uri;
+        }
+
+- 安装证书
+
+        acme.sh --install-cert -d zhqli.com --key-file /etc/nginx/ssl/zhqli.com.key --fullchain-file /etc/nginx/ssl/zhqli.com.crt --reloadcmd "sudo nginx -s reload"
+
+- 续期
+
+        acme.sh --renew -d zhqli.com -w /srv/www
