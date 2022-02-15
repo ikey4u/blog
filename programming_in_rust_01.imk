@@ -4,9 +4,7 @@ date = "2022-02-15"
 author = ["ikey4u <pwnkeeper@gmail>"]
 ---
 
-# Programming in Rust 2nd - Chapter 1: Systems Programmers Can Have Nice Things
-
-## 内存安全
+# 内存安全
 
 - UB 安全
 
@@ -27,8 +25,7 @@ author = ["ikey4u <pwnkeeper@gmail>"]
     避免 UB 完全是程序员自己的事情.
 
     在 C/C++ 发展的几十年中, UB 行为实际上还是各种安全漏洞的主要来源之一, 那么 C/C++ 的程序员就会处于一种略显尴尬的地位:
-    尽管 C/C++ 是一种系统级别的编程语言, 除了完成正常的开发需求只玩, 还要求程序员保证程序的稳定运行且没
-    有安全问题.
+    尽管 C/C++ 是一种系统级别的编程语言, 除了完成正常的开发需求之外, 还要求程序员保证程序的稳定运行且没有安全问题.
 
     所以 Rust 出现了, Rust 语言承诺, `如果程序通过了编译器检查, 那么保证该程序没有 UB`.
     也就是说, 野指针 (dangling pointer), double-free, 空指针异常 (null pointer dereference)
@@ -39,19 +36,21 @@ author = ["ikey4u <pwnkeeper@gmail>"]
 
 - data-race 安全
 
-    并行编程在 C/C++ 中是比较麻烦的, 很难正确使用. Rust 不仅保证内存安全, 同时也保证多线程程序不会发生 data race,
-    实际上 data race 也是导致漏洞的一大来源之一. data race 是说, 多个线程同时操作了同一内存地址, 且其中至少有一个现场修改了内存地址上的内容.
+    并行编程在 C/C++ 中是比较麻烦的, 很难正确使用. Rust 不仅保证没有 UB, 同时也保证多线程程序不会发生 data race,
+    data race 是说, 多个线程同时操作了同一内存地址, 且其中至少有一个现场修改了内存地址上的内容,
+    实际上 data race 也是导致漏洞的一大来源之一.
 
     如果你的数据不会发生改变, 那么你可以在多个线程间自由传递, 如果你的数据会发生改变,
-    那么你需要通过同步原语对数据进行访问. Rust 提供了所有的并行工具, 比如 mutex, channel,
+    那么你需要通过同步原语对数据进行访问. Rust 提供了所有的同步原语工具, 比如 mutex, channel,
     atomic 等, Rust 会检测你是否正确使用了这些工具.
 
-## 零抽象能力
+# 零抽象能力
 
-C++ 提供零抽象能力, C++ 之父说过, `What you dont't use, you dong't pay for. And further: What you do
-use, you couldn't hand code any better`. 这句话同样也可以应用到 Rust 上.
+C++ 提供零抽象能力, 即 C++ 之父说过的 `What you don’t use, you don’t pay for (in time or space) and further: What you do use, you couldn’t hand code any better`,
+这句话同样也可以应用到 Rust 上. 如果你使用了语言提供的某个功能, 那么编译器生成的代码不会比人手动实现并使用这个功能获得的效果差.
+如果你不使用语言提供的某个功能, 那么这个功能不会使已存在的代码变得更大或者更慢.
 
-## 合作能力
+# 合作能力
 
 Rust 提供了十分方便的构建工具和平台, 比如 Cargo 和托管第三方的平台 @a{crates.io}.
 
